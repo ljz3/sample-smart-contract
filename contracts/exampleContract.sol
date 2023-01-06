@@ -4,6 +4,14 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+/*
+ * @title Example Contract
+ * @notice This is an example contract demonstrating production level code quality
+ *         while performing very basic functionality. Proxies/clones of this contract 
+ *         is to be deployed by the Example Factory contract.
+ * @author Kevin (Jiazheng) Li
+ */
+
 contract ExampleContract is Initializable, AccessControl {
     /*********************************** Structs **********************************/
     
@@ -53,8 +61,8 @@ contract ExampleContract is Initializable, AccessControl {
     /**
      * @dev Thrown when caller has insufficient permissions
      *
-     * @param _address the address that has insufficient permissions
-     * @param requiredRole the required role to execute the function
+     * @param _address The address that has insufficient permissions
+     * @param requiredRole The required role to execute the function
      */
     error InsufficientPermissions(address _address, bytes32 requiredRole);
 
@@ -87,13 +95,15 @@ contract ExampleContract is Initializable, AccessControl {
     /********************************* Initialize *********************************/
 
     /**
-     * The initializer function of this example contract
+     * @notice The initializer function of this example contract
      *
      * @param data All of the data in bytes to be decoded to set contract admins and initial data
      */
     function initialize(bytes calldata data) public initializer {
         // Decoding the data into usable parameters
         address[] memory _admins = abi.decode(data, (address[]));
+        
+        // Setting all of the admins
         for (uint256 i = 0; i < _admins.length; i++) {
             _grantRole(DEFAULT_ADMIN_ROLE, _admins[i]);
         }
@@ -102,9 +112,9 @@ contract ExampleContract is Initializable, AccessControl {
     /******************************* Read Functions *******************************/
 
     /**
-     * Returns the ExampleStruct stored for the given address
+     * @notice Returns the ExampleStruct stored for the given address
      *
-     * 
+     * @param _address The address to fetch the example values for
      */
     function getExampleValue(address _address)
         public
@@ -117,7 +127,11 @@ contract ExampleContract is Initializable, AccessControl {
     /******************************* Write Functions ******************************/
 
     /**
-     * TODO: Description
+     * @notice Sets the ExampleStruct stored for the given address
+     * @dev This function is restricted to be admin only
+     *
+     * @param _address The address to set the example values for
+     * @param value The example value to set for the given address
      */
     function setExampleValue(address _address, ExampleStruct memory value)
         public
@@ -129,7 +143,10 @@ contract ExampleContract is Initializable, AccessControl {
     /***************************** Internal Functions *****************************/
 
     /**
-     * TODO: Description
+     * @notice Sets the ExampleStruct stored for the given address
+     *
+     * @param _address The address to set the example values for
+     * @param value The example value to set for the given address
      */
     function _setExampleValue(address _address, ExampleStruct memory value)
         internal

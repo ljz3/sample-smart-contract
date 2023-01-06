@@ -71,29 +71,26 @@ contract ExampleFactory is AccessControl {
 
     /******************************* Write Functions ******************************/
 
-    /***************************** Internal Functions *****************************/
-
     /**
      * Deploy upgradable proxy with the implementation 
      *
      * @param _salt the cryptographic salt for the contract
      * @param _data data to be passed into initialize call on the clone.
      */
-    function deployDeterministicProxy(bytes20 _salt, bytes calldata _data)
+    function deployDeterministicUpgradableProxy(bytes20 _salt, bytes calldata _data)
         external
-        returns (address clone)
+        returns (address)
     {
         bytes20 salt = newSalt(_salt, _data);
 
-        address payable proxy = payable(
-            new ERC1967Proxy{salt: salt}(implementationAddress, _data)
-        );
+        ERC1967Proxy proxy = 
+            new ERC1967Proxy{salt: salt}(implementationAddress, "");
+        
+        IExampleClone(address(proxy)).initialize(_data);
 
-        IExampleClone(proxy).initialize(_data);
+        emit ExampleCloneDeployed(address(proxy), _salt, _data);
 
-        emit ExampleCloneDeployed(proxy, _salt, _data);
-
-        return proxy;
+        return address(proxy);
     }
 
     /**
@@ -114,6 +111,8 @@ contract ExampleFactory is AccessControl {
 
         emit ExampleCloneDeployed(clone, _salt, _data);
     }
+
+    /***************************** Internal Functions *****************************/
 
     function newSalt(bytes20 _salt, bytes calldata _data)
         internal
