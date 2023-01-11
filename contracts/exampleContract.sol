@@ -7,14 +7,14 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /*
  * @title Example Contract
  * @notice This is an example contract demonstrating production level code quality
- *         while performing very basic functionality. Proxies/clones of this contract 
+ *         while performing very basic functionality. Proxies/clones of this contract
  *         is to be deployed by the Example Factory contract.
  * @author Kevin (Jiazheng) Li
  */
 
 contract ExampleContract is Initializable, AccessControl {
     /*********************************** Structs **********************************/
-    
+
     /**
      * @notice ExampleStruct record stores example details of an address
      */
@@ -28,7 +28,7 @@ contract ExampleContract is Initializable, AccessControl {
     /**
      * @notice Name of the contract: Example Contract
      *
-     * @dev function CONTRACT_NAME() public view returns (string)
+     * @dev Function CONTRACT_NAME() public view returns (string)
      * @dev Field is declared public: getter CONTRACT_NAME() is created when compiled,
      *      it returns the name of the contract.
      */
@@ -37,7 +37,7 @@ contract ExampleContract is Initializable, AccessControl {
     /************************************ Vars ************************************/
 
     /**
-     * @notice a record of all ExampleStructs for addresses
+     * @notice A record of all ExampleStructs for addresses
      */
     mapping(address => ExampleStruct) public exampleStructMapping;
 
@@ -102,7 +102,7 @@ contract ExampleContract is Initializable, AccessControl {
     function initialize(bytes calldata data) public initializer {
         // Decoding the data into usable parameters
         address[] memory _admins = abi.decode(data, (address[]));
-        
+
         // Setting all of the admins
         for (uint256 i = 0; i < _admins.length; i++) {
             _grantRole(DEFAULT_ADMIN_ROLE, _admins[i]);
@@ -152,5 +152,10 @@ contract ExampleContract is Initializable, AccessControl {
         internal
     {
         exampleStructMapping[_address] = value;
+        emit ExampleEvent(
+            _address,
+            value.exampleValueOne,
+            value.exampleValueTwo
+        );
     }
 }

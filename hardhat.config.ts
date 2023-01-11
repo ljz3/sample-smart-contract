@@ -5,14 +5,8 @@ import "hardhat-deploy";
 
 const config: HardhatUserConfig = {
   networks: {
-    mainnet: {
-      url: process.env.MAINNET_URL || "https://rpc.ankr.com/eth",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      chainId: 1,
-    },
     goerli: {
-      url: process.env.GOERLI_URL || "https://rpc.ankr.com/eth_goerli",
+      url: "https://rpc.ankr.com/eth_goerli",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       chainId: 5,
@@ -30,6 +24,17 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  namedAccounts: {
+    deployer: {
+      dev: process.env.PUBLIC_KEY ?? null,
+      goerli: 0,
+    },
+  },
+  verify: {
+    etherscan: {
+      apiKey: process.env.ETHERSCAN_API_KEY,
+    },
   },
 };
 

@@ -1,13 +1,26 @@
-import { ethers } from "hardhat";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { assert, expect } from "chai";
 import "@nomicfoundation/hardhat-toolbox";
-import { ExampleContract, ExampleFactory } from "../typechain-types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { IMPLEMENTATION_STORAGE_POSITION } from "../constants/constants";
+import {
+  DummyImplementation,
+  ExampleContract,
+  ExampleFactory,
+  TransparentUpgradeableProxy,
+} from "../typechain-types";
+import {
+  getRandomSalt,
+  getSignersHelper,
+  stripBytes32ToAddress,
+} from "./helper";
 
+// TODO: Add more details to this test suite
 describe("ExampleFactory", function () {
   let factory: ExampleFactory;
   let baseExampleContract: ExampleContract;
+  let transparentUpgradeableProxy: TransparentUpgradeableProxy;
+  let dummyImplementation: DummyImplementation;
   let signers: {
     admin1: SignerWithAddress;
     admin2: SignerWithAddress;
@@ -25,6 +38,22 @@ describe("ExampleFactory", function () {
       "ExampleContract",
     );
     baseExampleContract = await BaseExampleContract.deploy();
+
+    const DummyImplementationContract = await ethers.getContractFactory(
+      "DummyImplementation",
+    );
+    dummyImplementation = await DummyImplementationContract.deploy();
+
+    const TransparentUpgradeableProxyContract = await ethers.getContractFactory(
+      "TransparentUpgradeableProxy",
+    );
+    transparentUpgradeableProxy =
+      await TransparentUpgradeableProxyContract.deploy(
+        dummyImplementation.address,
+        signers.admin1.address,
+        Buffer.from(""),
+      );
+
     const Factory = await ethers.getContractFactory("ExampleFactory");
     factory = await Factory.deploy(
       [signers.admin1.address, signers.admin2.address, signers.admin3.address],
@@ -88,12 +117,16 @@ describe("ExampleFactory", function () {
           ["address[]"],
           [[signers.admin1.address]],
         );
-        let tx = await factory.deployDeterministicUpgradableProxy(salt, callData);
+        let tx = await factory.deployDeterministicUpgradableProxy(
+          salt,
+          signers.user1.address,
+          callData,
+        );
 
         const receipt = await tx.wait();
 
         const event = receipt.events?.find(
-          (ev) => ev.event === "ExampleCloneDeployed",
+          (ev) => ev.event === "ExampleUpgradableProxyDeployed",
         );
 
         const contract = baseExampleContract
@@ -110,12 +143,16 @@ describe("ExampleFactory", function () {
           ["address[]"],
           [[signers.admin1.address]],
         );
-        let tx = await factory.deployDeterministicUpgradableProxy(salt, callData);
+        let tx = await factory.deployDeterministicUpgradableProxy(
+          salt,
+          signers.user1.address,
+          callData,
+        );
 
         const receipt = await tx.wait();
 
         const event = receipt.events?.find(
-          (ev) => ev.event === "ExampleCloneDeployed",
+          (ev) => ev.event === "ExampleUpgradableProxyDeployed",
         );
 
         const contract = baseExampleContract
@@ -127,24 +164,47 @@ describe("ExampleFactory", function () {
 
         expect(val).to.equal("Example Contract");
       });
+
+      it("Proxy contract is upgradable", async () => {
+        const salt = getRandomSalt();
+        const callData = ethers.utils.defaultAbiCoder.encode(
+          ["address[]"],
+          [[signers.admin1.address]],
+        );
+        let tx = await factory.deployDeterministicUpgradableProxy(
+          salt,
+          signers.user1.address,
+          callData,
+        );
+
+        const receipt = await tx.wait();
+
+        const event = receipt.events?.find(
+          (ev) => ev.event === "ExampleUpgradableProxyDeployed",
+        );
+
+        const contract = transparentUpgradeableProxy
+          //@ts-ignore
+          .attach(event.args[0])
+          .connect(signers.user1);
+
+        const oldImplementation = await signers.user1.provider?.getStorageAt(
+          contract.address,
+          IMPLEMENTATION_STORAGE_POSITION,
+        );
+        await contract.upgradeTo(dummyImplementation.address);
+        const newImplementation = await signers.user1.provider?.getStorageAt(
+          contract.address,
+          IMPLEMENTATION_STORAGE_POSITION,
+        );
+
+        expect(stripBytes32ToAddress(oldImplementation)).to.equal(
+          baseExampleContract.address.toLowerCase(),
+        );
+        expect(stripBytes32ToAddress(newImplementation)).to.equal(
+          dummyImplementation.address.toLowerCase(),
+        );
+      });
     });
   });
-
-  // Helper function to get a random salt
-  const getRandomSalt = () => {
-    return ethers.utils.randomBytes(20);
-  };
-
-  // Helper function to set all signers used in this test suite
-  const getSignersHelper = async () => {
-    const [admin1, admin2, admin3, user1, user2] = await ethers.getSigners();
-
-    return {
-      admin1,
-      admin2,
-      admin3,
-      user1,
-      user2,
-    };
-  };
 });

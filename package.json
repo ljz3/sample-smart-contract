@@ -3,7 +3,9 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "deploy": "hardhat deploy",
+    "deploy:goerli": "hardhat --network goerli deploy",
     "verify": "hardhat etherscan-verify",
+    "verify:goerli": "hardhat etherscan-verify --network goerli",
     "clean": "hardhat clean"
   },
   "devDependencies": {
